@@ -16,9 +16,8 @@
 
 package com.dataartisans.flink.example.eventpattern
 
-import java.text.SimpleDateFormat
 import java.util
-import java.util.{Calendar, Properties, UUID}
+import java.util.{Properties, UUID}
 
 import com.dataartisans.flink.example.eventpattern.kafka.EventDeSerializer
 
@@ -27,7 +26,7 @@ import org.apache.flink.api.common.state.{ValueState, ValueStateDescriptor}
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.streaming.connectors.elasticsearch.{IndexRequestBuilder, ElasticsearchSink}
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer08
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer010
 import org.apache.flink.util.Collector
 
 import org.elasticsearch.action.index.IndexRequest
@@ -59,7 +58,7 @@ object StreamingDemo {
     elasticConfig.put("cluster.name", "elasticsearch")
     
     
-    val stream = env.addSource(new FlinkKafkaConsumer08[Event](
+    val stream = env.addSource(new FlinkKafkaConsumer010[Event](
                                      "flink-demo-topic-1", new EventDeSerializer(), kafkaProps))
     val alerts = stream
       // partition on the address to make sure equal addresses
