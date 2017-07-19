@@ -17,10 +17,12 @@
 package com.dataartisans.flink.example.eventpattern
 
 import com.dataartisans.flink.example.eventpattern.kafka.EventDeSerializer
-import org.apache.flink.api.common.functions.{RichFlatMapFunction}
+import org.apache.flink.api.common.functions.RichFlatMapFunction
 import org.apache.flink.api.common.state.{ValueState, ValueStateDescriptor}
 import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.configuration.Configuration
+import org.apache.flink.contrib.streaming.state.RocksDBStateBackend
+import org.apache.flink.runtime.state.filesystem.FsStateBackend
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer010
 import org.apache.flink.util.Collector
@@ -30,7 +32,13 @@ import org.apache.flink.util.Collector
  * a state machine (per originating IP address) to validate that the events follow
  * the state machine's rules.
  *
- * Local invocation line: --input-topic statemachine --bootstrap.servers localhost:9092 --zookeeper.servers localhost:2181
+ * Basic invocation line:
+ * --input-topic <> --bootstrap.servers localhost:9092 --zookeeper.servers localhost:2181
+ *
+ * StateBackend-related options:
+ * --stateBackend: one of file or rocksdb
+ * --asyncCheckpoints: true or false (only file backend)
+ * --incrementalCheckpoints: true or false (only RocksDB backend)
  */
 object StateMachineJob {
 
@@ -44,7 +52,19 @@ object StateMachineJob {
     env.enableCheckpointing(pt.getInt("checkpointInterval", 5000))
     env.setParallelism(pt.getInt("parallelism", 1))
     env.setMaxParallelism(pt.getInt("maxParallelism", pt.getInt("parallelism", 1)))
-    
+
+    val stateBackend = pt.get("stateBackend", "file")
+    val checkpointDir = pt.getRequired("checkpointDir")
+
+    stateBackend match {
+      case "file" =>
+        val asyncCheckpoints = pt.getBoolean("asyncCheckpoints", false)
+        env.setStateBackend(new FsStateBackend(checkpointDir, asyncCheckpoints))
+      case "rocksdb" =>
+        val incrementalCheckpoints = pt.getBoolean("incrementalCheckpoints", false)
+        env.setStateBackend(new RocksDBStateBackend(checkpointDir, incrementalCheckpoints))
+    }
+
     val stream = env.addSource(
       new FlinkKafkaConsumer010[Event](
         pt.getRequired("input-topic"), new EventDeSerializer(), pt.getProperties))
@@ -60,7 +80,7 @@ object StateMachineJob {
 
     // if we get any alert, fail
     alerts.flatMap { any =>
-      throw new RuntimeException(s"Got an alert: ${any}.")
+      throw new RuntimeException(s"Got an alert: $any.")
       "Make type checker happy."
     }
     
