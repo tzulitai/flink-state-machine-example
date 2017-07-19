@@ -34,7 +34,7 @@ import org.apache.flink.util.XORShiftRandom
   * an operator that adds "event time" to the stream (just counting elements)
   * a Kafka sink writing the resulting stream to a topic
   *
-  * Local invocation line: --topic statemachine --bootstrap.servers localhost:9092
+  * Local invocation line: --numKeys <> --topic statemachine --bootstrap.servers localhost:9092
  */
 object DataGeneratorJob {
 
