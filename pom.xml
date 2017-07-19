@@ -53,6 +53,11 @@ under the License.
 			<artifactId>flink-connector-elasticsearch_2.10</artifactId>
 			<version>${flink.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-statebackend-rocksdb_2.10</artifactId>
+			<version>${flink.version}</version>
+		</dependency>
 		<!-- explicitly add a standard loggin framework, as Flink does not have
 		a hard dependency on one specific framework by default -->
 		<dependency>
@@ -137,7 +142,7 @@ under the License.
 							<transformers>
 								<!-- add Main-Class to manifest file -->
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-									<mainClass>com.dataartisans.flink.example.eventpattern.StreamingDemo</mainClass>
+									<mainClass>com.dataartisans.flink.example.eventpattern.StateMachineJob</mainClass>
 								</transformer>
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
 							</transformers>
