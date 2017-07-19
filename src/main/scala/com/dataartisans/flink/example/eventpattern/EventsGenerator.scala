@@ -63,7 +63,7 @@ class EventsGenerator {
       if (!states.containsKey(nextIP)) {
         val (transition, state) = InitialState.randomTransition(rnd)  
         states.put(nextIP, state)
-        Event(nextIP, transition)
+        Event(nextIP.toString, transition)
       }
       else {
         // collision on IP address, try again
@@ -91,7 +91,7 @@ class EventsGenerator {
       
       if (p < errorProb) {
         val event = currentState.randomInvalidTransition(rnd)
-        Event(address, event)
+        Event(address.toString, event)
       }
       else {
         val (event, newState) = currentState.randomTransition(rnd)
@@ -100,7 +100,7 @@ class EventsGenerator {
           states.put(address, newState)
         }
         
-        Event(address, event)
+        Event(address.toString, event)
       }
     }
   }
@@ -122,7 +122,7 @@ class EventsGenerator {
       iter.remove()
 
       val event = currentState.randomInvalidTransition(rnd)
-      Some(Event(address, event))
+      Some(Event(address.toString, event))
     }
     else {
       None

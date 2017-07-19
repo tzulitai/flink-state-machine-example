@@ -22,10 +22,10 @@ package com.dataartisans.flink.example.eventpattern
  * @param sourceAddress The originating address (think 32 bit IPv4 address).
  * @param event The event type.
  */
-case class Event(sourceAddress: Int, event: Event.EventType) {
+case class Event(sourceAddress: String, event: Event.EventType) {
 
   override def toString: String = {
-    s"Event ${Event.formatAddress(sourceAddress)} : ${Event.eventTypeName(event)}"
+    s"Event ${sourceAddress} : ${Event.eventTypeName(event)}"
   }
 }
 
@@ -36,10 +36,10 @@ case class Event(sourceAddress: Int, event: Event.EventType) {
  * @param state The state that the event state machine found.
  * @param transition The transition that was considered invalid.
  */
-case class Alert(address: Int, state: State, transition: Event.EventType) {
+case class Alert(address: String, state: State, transition: Event.EventType) {
 
   override def toString: String = {
-    s"ALERT ${Event.formatAddress(address)} : ${state.name} -> ${Event.eventTypeName(transition)}"
+    s"ALERT ${address} : ${state.name} -> ${Event.eventTypeName(transition)}"
   }
 }
 

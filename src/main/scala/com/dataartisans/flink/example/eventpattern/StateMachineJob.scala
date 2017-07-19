@@ -43,9 +43,10 @@ object StateMachineJob {
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     env.enableCheckpointing(pt.getInt("checkpointInterval", 5000))
     
-    val stream = env.addSource(
-      new FlinkKafkaConsumer010[Event](
-        pt.getRequired("input-topic"), new EventDeSerializer(), pt.getProperties))
+//    val stream = env.addSource(
+//      new FlinkKafkaConsumer010[Event](
+//        pt.getRequired("input-topic"), new EventDeSerializer(), pt.getProperties))
+    val stream = env.addSource(new KeyedEventsGeneratorSource(pt.getInt("numKeys", 200)))
 
     val alerts = stream
       // partition on the address to make sure equal addresses

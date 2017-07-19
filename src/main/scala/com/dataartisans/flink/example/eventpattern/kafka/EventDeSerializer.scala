@@ -16,12 +16,14 @@
 
 package com.dataartisans.flink.example.eventpattern.kafka
 
-import java.nio.{ByteBuffer, ByteOrder}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 
 import com.dataartisans.flink.example.eventpattern.Event
 import org.apache.flink.api.common.typeinfo.TypeInformation
+import org.apache.flink.core.memory.{DataInputViewStreamWrapper, DataOutputViewStreamWrapper}
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.streaming.util.serialization.{DeserializationSchema, SerializationSchema}
+import org.apache.flink.types.StringValue
 
 /**
  * A serializer / Deserializer for converting [[Event]] objects from/to byte sequences
@@ -30,17 +32,20 @@ import org.apache.flink.streaming.util.serialization.{DeserializationSchema, Ser
 class EventDeSerializer extends DeserializationSchema[Event] with SerializationSchema[Event] {
   
   override def deserialize(bytes: Array[Byte]): Event = {
-    val buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
-    val address: Int = buffer.getInt(0)
-    val eventType: Int = buffer.getInt(4)
+    val bais = new ByteArrayInputStream(bytes)
+    val inputView = new DataInputViewStreamWrapper(bais)
+    val address = StringValue.readString(inputView)
+    val eventType: Int = inputView.readInt()
     Event(address, eventType)
   }
 
   override def serialize(t: Event): Array[Byte] = {
-    val byteBuffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN)
-    byteBuffer.putInt(0, t.sourceAddress)
-    byteBuffer.putInt(4, t.event)
-    byteBuffer.array()
+    val baos = new ByteArrayOutputStream()
+    val outputView = new DataOutputViewStreamWrapper(baos)
+    StringValue.writeString(t.sourceAddress, outputView)
+    outputView.writeInt(t.event)
+    outputView.flush()
+    baos.toByteArray
   }
 
   override def isEndOfStream(t: Event): Boolean = false

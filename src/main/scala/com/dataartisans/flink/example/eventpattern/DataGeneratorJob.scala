@@ -16,6 +16,8 @@
 
 package com.dataartisans.flink.example.eventpattern
 
+import java.util.UUID
+
 import com.dataartisans.flink.example.eventpattern.kafka.EventDeSerializer
 import grizzled.slf4j.Logger
 import org.apache.flink.api.java.utils.ParameterTool
@@ -72,7 +74,7 @@ class KeyedEventsGeneratorSource(numKeys: Int)
   val rnd = new XORShiftRandom()
 
   @transient var localKeyRanges: Seq[KeyRange] = Seq()
-//  @transient var state: ListState[KeyRange]
+  @transient var keyPrefix: String = UUID.randomUUID().toString
 
   override def cancel(): Unit = {
     running = false
@@ -80,7 +82,10 @@ class KeyedEventsGeneratorSource(numKeys: Int)
 
   override def initializeState(context: FunctionInitializationContext): Unit = {
 
-    @transient var log = Logger(getClass)
+    log = Logger(getClass)
+
+    keyPrefix = UUID.randomUUID().toString
+
 
     if (!context.isRestored) {
       // initialize our initial operator state based on the number of keys and the parallelism
@@ -108,6 +113,9 @@ class KeyedEventsGeneratorSource(numKeys: Int)
   }
 
   override def snapshotState(context: FunctionSnapshotContext): Unit = {
+    // we don't actually checkpoint but restart fresh on every run with a new key prefix
+    // this avoids breaking a downstream state machine because we might re-emit events to Kafka
+    // No exactly-once producing yet ... :-(
   }
 
   override def run(ctx: SourceContext[Event]): Unit = {
@@ -123,7 +131,8 @@ class KeyedEventsGeneratorSource(numKeys: Int)
         if (newState == TerminalState) {
           keyRange.keyState += (key -> InitialState)
         }
-        ctx.collect(Event(key, nextEvent))
+//        ctx.collect(Event(keyPrefix + key, nextEvent))
+        ctx.collect(Event(key + "", nextEvent))
       }
 
       val p = rnd.nextDouble()
