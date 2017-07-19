@@ -29,7 +29,7 @@ import org.apache.flink.util.XORShiftRandom
 
 
 /**
- * This Flink job runs the following:
+  * This Flink job runs the following:
   * The EventsGeneratorSource from the state machine
   * an operator that adds "event time" to the stream (just counting elements)
   * a Kafka sink writing the resulting stream to a topic

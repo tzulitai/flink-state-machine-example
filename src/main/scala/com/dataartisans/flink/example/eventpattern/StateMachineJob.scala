@@ -16,50 +16,37 @@
 
 package com.dataartisans.flink.example.eventpattern
 
-import java.util
-import java.util.{Properties, UUID}
-
 import com.dataartisans.flink.example.eventpattern.kafka.EventDeSerializer
-
-import org.apache.flink.api.common.functions.{RuntimeContext, RichFlatMapFunction}
+import org.apache.flink.api.common.functions.{RichFlatMapFunction}
 import org.apache.flink.api.common.state.{ValueState, ValueStateDescriptor}
+import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.scala._
-import org.apache.flink.streaming.connectors.elasticsearch.{IndexRequestBuilder, ElasticsearchSink}
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer010
 import org.apache.flink.util.Collector
-
-import org.elasticsearch.action.index.IndexRequest
-import org.elasticsearch.client.Requests
 
 /**
  * Demo streaming program that receives (or generates) a stream of events and evaluates
  * a state machine (per originating IP address) to validate that the events follow
  * the state machine's rules.
+ *
+ * Local invocation line: --input-topic statemachine --bootstrap.servers localhost:9092 --zookeeper.servers localhost:2181
  */
-object StreamingDemo {
+object StateMachineJob {
 
   def main(args: Array[String]): Unit = {
+
+    // retrieve input parameters
+    val pt: ParameterTool = ParameterTool.fromArgs(args)
     
     // create the environment to create streams and configure execution
     val env = StreamExecutionEnvironment.getExecutionEnvironment
-    env.enableCheckpointing(5000)
+    env.enableCheckpointing(pt.getInt("checkpointInterval", 5000))
     
-    // data stream from kafka topic.
-    val kafkaProps = new Properties()
-    kafkaProps.setProperty("zookeeper.connect", "localhost:2181")
-    kafkaProps.setProperty("bootstrap.servers", "localhost:9092")
-    kafkaProps.setProperty("group.id", UUID.randomUUID().toString)
-    kafkaProps.setProperty("auto.commit.enable", "false")
-    kafkaProps.setProperty("auto.offset.reset", "largest")
+    val stream = env.addSource(
+      new FlinkKafkaConsumer010[Event](
+        pt.getRequired("input-topic"), new EventDeSerializer(), pt.getProperties))
 
-    val elasticConfig = new java.util.HashMap[String, String]
-    elasticConfig.put("bulk.flush.max.actions", "1")
-    elasticConfig.put("cluster.name", "elasticsearch")
-    
-    
-    val stream = env.addSource(new FlinkKafkaConsumer010[Event](
-                                     "flink-demo-topic-1", new EventDeSerializer(), kafkaProps))
     val alerts = stream
       // partition on the address to make sure equal addresses
       // end up in the same state machine flatMap function
@@ -68,28 +55,14 @@ object StreamingDemo {
       // the function that evaluates the state machine over the sequence of events
       .flatMap(new StateMachineMapper())
 
-    
-      alerts.print()
-    
-      alerts.addSink(new ElasticsearchSink[Alert](elasticConfig, new IndexRequestBuilder[Alert]() {
-        
-          override def createIndexRequest(element: Alert, ctx: RuntimeContext): IndexRequest = {
-            
-            val now: AnyRef = System.currentTimeMillis().asInstanceOf[AnyRef]
-            
-            val json = new util.HashMap[String, AnyRef]()
-            json.put("message", element.toString)
-            json.put("time", now)
 
-            Requests.indexRequest()
-              .index("alerts-idx")
-              .`type`("numalerts")
-              .source(json)
-          }
-      }))
-//      // output to standard-out
-//      .print()
+    // if we get any alert, fail
+    alerts.flatMap { any =>
+      throw new RuntimeException(s"Got an alert: ${any}.")
+      "Make type checker happy."
+    }
     
+
     // trigger program execution
     env.execute()
   }
