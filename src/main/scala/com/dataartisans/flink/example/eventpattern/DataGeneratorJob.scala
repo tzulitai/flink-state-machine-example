@@ -86,29 +86,31 @@ class KeyedEventsGeneratorSource(numKeys: Int)
 
     keyPrefix = UUID.randomUUID().toString
 
+    // we always initialize from zero, never snapshot state
 
-    if (!context.isRestored) {
-      // initialize our initial operator state based on the number of keys and the parallelism
-      val subtaskIndex = getRuntimeContext.getIndexOfThisSubtask
-      val numSubtasks = getRuntimeContext.getMaxNumberOfParallelSubtasks
+    // initialize our initial operator state based on the number of keys and the parallelism
+    val subtaskIndex = getRuntimeContext.getIndexOfThisSubtask
+    val numSubtasks = getRuntimeContext.getNumberOfParallelSubtasks
 
-      // create numSubtasks * 2 operator states so that we can scale a bit
-      val numKeyRanges = numSubtasks * 2
-      // we might not get exactly the number of requested keys because of this, doesn't matter...
-      val keysPerKeyRange = numKeyRanges / numKeys
+    // create maxSubtasks/numSubtasks operator states so that we can scale a bit
+    val numKeyRanges = getRuntimeContext.getMaxNumberOfParallelSubtasks / numSubtasks
+    // we might not get exactly the number of requested keys because of this, doesn't matter...
+    val keysPerKeyRange = Math.ceil(numKeys / numKeyRanges.toFloat).toInt
 
-      // which are our key ranges
-      localKeyRanges = 0.to(numKeyRanges)
-        .filter { range => range % numSubtasks == subtaskIndex }
-        .map { rangeIndex =>
-          val startIndex = rangeIndex * keysPerKeyRange
-          val endIndex = rangeIndex * keysPerKeyRange + keysPerKeyRange
-          val states: Seq[(Int, State)] = startIndex.to(endIndex).map(i => i -> InitialState)
-          KeyRange(startIndex, endIndex, scala.collection.mutable.Map[Int, State](states: _*))
-        }
+    println(s"KEY STATS $numKeyRanges $numKeys $keysPerKeyRange")
 
-      log.info("Event source {}/{} has key ranges {}.", subtaskIndex, numSubtasks, localKeyRanges)
-    }
+    // which are our key ranges
+    localKeyRanges = 0.until(numKeyRanges)
+      .filter { range => range % numSubtasks == subtaskIndex }
+      .map { rangeIndex =>
+        val startIndex = rangeIndex * keysPerKeyRange
+        val endIndex = rangeIndex * keysPerKeyRange + keysPerKeyRange
+        println(s"START $startIndex until $endIndex")
+        val states: Seq[(Int, State)] = startIndex.until(endIndex).map(i => i -> InitialState)
+        KeyRange(startIndex, endIndex, scala.collection.mutable.Map[Int, State](states: _*))
+      }
+
+    log.info(s"Event source $subtaskIndex/$numSubtasks has key ranges $localKeyRanges.")
 
   }
 
@@ -130,13 +132,11 @@ class KeyedEventsGeneratorSource(numKeys: Int)
         val (nextEvent, newState) = keyState.get.randomTransition(rnd)
         if (newState == TerminalState) {
           keyRange.keyState += (key -> InitialState)
+        } else {
+          keyRange.keyState += (key -> newState)
         }
-//        ctx.collect(Event(keyPrefix + key, nextEvent))
-        ctx.collect(Event(key + "", nextEvent))
+        ctx.collect(Event(keyPrefix + "##" + key, nextEvent))
       }
-
-      val p = rnd.nextDouble()
-
     }
   }
 }
