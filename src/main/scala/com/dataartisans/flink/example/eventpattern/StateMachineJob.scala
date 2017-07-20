@@ -24,6 +24,7 @@ import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.contrib.streaming.state.RocksDBStateBackend
 import org.apache.flink.runtime.state.filesystem.FsStateBackend
+import org.apache.flink.streaming.api.environment.CheckpointConfig.ExternalizedCheckpointCleanup
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer010
 import org.apache.flink.util.Collector
@@ -43,6 +44,7 @@ import org.apache.flink.util.Collector
  * --stateBackend: one of file or rocksdb
  * --asyncCheckpoints: true or false (only file backend)
  * --incrementalCheckpoints: true or false (only RocksDB backend)
+ * --externalizedCheckpoints: true or false
  * --restartDelay: <>
  */
 object StateMachineJob {
@@ -56,6 +58,9 @@ object StateMachineJob {
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     env.enableCheckpointing(pt.getInt("checkpointInterval", 5000))
     env.setRestartStrategy(RestartStrategies.fixedDelayRestart(Int.MaxValue, pt.getInt("restartDelay", 0)))
+    if (pt.has("externalizedCheckpoints") && pt.getBoolean("externalizedCheckpoints", false)) {
+      env.getCheckpointConfig.enableExternalizedCheckpoints(ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION)
+    }
 
     env.setParallelism(pt.getInt("parallelism", 1))
     env.setMaxParallelism(pt.getInt("maxParallelism", pt.getInt("parallelism", 1)))
