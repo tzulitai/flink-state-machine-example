@@ -18,6 +18,7 @@ package com.dataartisans.flink.example.eventpattern
 
 import com.dataartisans.flink.example.eventpattern.kafka.EventDeSerializer
 import org.apache.flink.api.common.functions.RichFlatMapFunction
+import org.apache.flink.api.common.restartstrategy.RestartStrategies
 import org.apache.flink.api.common.state.{ValueState, ValueStateDescriptor}
 import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.configuration.Configuration
@@ -33,12 +34,16 @@ import org.apache.flink.util.Collector
  * the state machine's rules.
  *
  * Basic invocation line:
- * --input-topic <> --bootstrap.servers localhost:9092 --zookeeper.servers localhost:2181
+ * --input-topic <>
+ * --bootstrap.servers localhost:9092
+ * --zookeeper.servers localhost:2181
+ * --checkpointDir <>
  *
  * StateBackend-related options:
  * --stateBackend: one of file or rocksdb
  * --asyncCheckpoints: true or false (only file backend)
  * --incrementalCheckpoints: true or false (only RocksDB backend)
+ * --restartDelay: <>
  */
 object StateMachineJob {
 
@@ -50,6 +55,8 @@ object StateMachineJob {
     // create the environment to create streams and configure execution
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     env.enableCheckpointing(pt.getInt("checkpointInterval", 5000))
+    env.setRestartStrategy(RestartStrategies.fixedDelayRestart(Int.MaxValue, pt.getInt("restartDelay", 0)))
+
     env.setParallelism(pt.getInt("parallelism", 1))
     env.setMaxParallelism(pt.getInt("maxParallelism", pt.getInt("parallelism", 1)))
 

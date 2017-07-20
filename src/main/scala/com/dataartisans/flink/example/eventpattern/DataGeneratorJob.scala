@@ -20,6 +20,7 @@ import java.util.UUID
 
 import com.dataartisans.flink.example.eventpattern.kafka.EventDeSerializer
 import grizzled.slf4j.Logger
+import org.apache.flink.api.common.restartstrategy.RestartStrategies
 import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.runtime.state.{FunctionInitializationContext, FunctionSnapshotContext}
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction
