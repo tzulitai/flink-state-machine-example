@@ -37,15 +37,16 @@ import org.apache.flink.util.Collector
  * Basic invocation line:
  * --input-topic <>
  * --bootstrap.servers localhost:9092
- * --zookeeper.servers localhost:2181
+ * --zookeeper.servers localhost:2181 (only needed for older Kafka versions)
  * --checkpointDir <>
  *
  * StateBackend-related options:
- * --stateBackend: one of file or rocksdb
- * --asyncCheckpoints: true or false (only file backend)
- * --incrementalCheckpoints: true or false (only RocksDB backend)
- * --externalizedCheckpoints: true or false
- * --restartDelay: <>
+ * --stateBackend: file or rocksdb (default: file)
+ * --asyncCheckpoints: true or false (only file backend, default: false)
+ * --incrementalCheckpoints: true or false (only RocksDB backend, default: false)
+ * --externalizedCheckpoints: true or false (default: false)
+ * --restartDelay: <int> (default: 0)
+ * --checkpointInterval: <int in ms> (default: 5000)
  */
 object StateMachineJob {
 
