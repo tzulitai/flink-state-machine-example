@@ -124,19 +124,23 @@ class KeyedEventsGeneratorSource(numKeys: Int)
   override def run(ctx: SourceContext[Event]): Unit = {
 
     while(running) {
-      val keyRangeIndex = rnd.nextInt(localKeyRanges.size)
-      val keyRange = localKeyRanges(keyRangeIndex)
-      val key = rnd.nextInt(keyRange.endKey - keyRange.startKey) + keyRange.startKey
+      if (localKeyRanges.nonEmpty) {
+        val keyRangeIndex = rnd.nextInt(localKeyRanges.size)
+        val keyRange = localKeyRanges(keyRangeIndex)
+        val key = rnd.nextInt(keyRange.endKey - keyRange.startKey) + keyRange.startKey
 
-      ctx.getCheckpointLock.synchronized {
-        val keyState = keyRange.keyState.get(key)
-        val (nextEvent, newState) = keyState.get.randomTransition(rnd)
-        if (newState == TerminalState) {
-          keyRange.keyState += (key -> InitialState)
-        } else {
-          keyRange.keyState += (key -> newState)
+        ctx.getCheckpointLock.synchronized {
+          val keyState = keyRange.keyState.get(key)
+          val (nextEvent, newState) = keyState.get.randomTransition(rnd)
+          if (newState == TerminalState) {
+            keyRange.keyState += (key -> InitialState)
+          } else {
+            keyRange.keyState += (key -> newState)
+          }
+          ctx.collect(Event(keyPrefix + "##" + key, nextEvent))
         }
-        ctx.collect(Event(keyPrefix + "##" + key, nextEvent))
+      } else {
+        Thread.sleep(10000)
       }
     }
   }
