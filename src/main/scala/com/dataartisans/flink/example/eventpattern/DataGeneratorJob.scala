@@ -125,6 +125,7 @@ class KeyedEventsGeneratorSource(numKeys: Int)
 
     while(running) {
       if (localKeyRanges.nonEmpty) {
+        Thread.sleep(80)
         val keyRangeIndex = rnd.nextInt(localKeyRanges.size)
         val keyRange = localKeyRanges(keyRangeIndex)
         val key = rnd.nextInt(keyRange.endKey - keyRange.startKey) + keyRange.startKey

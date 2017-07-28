@@ -26,6 +26,7 @@ import org.apache.flink.contrib.streaming.state.RocksDBStateBackend
 import org.apache.flink.runtime.state.filesystem.FsStateBackend
 import org.apache.flink.streaming.api.environment.CheckpointConfig.ExternalizedCheckpointCleanup
 import org.apache.flink.streaming.api.scala._
+import org.apache.flink.streaming.connectors.fs.bucketing.BucketingSink
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer09
 import org.apache.flink.util.Collector
 
@@ -96,7 +97,9 @@ object StateMachineJob {
       throw new RuntimeException(s"Got an alert: $any.")
       "Make type checker happy."
     }
-    
+
+    // per-hour datetime bucketer
+    stream.addSink(new BucketingSink[Event](pt.getRequired("bucket-sink-path")))
 
     // trigger program execution
     env.execute()
