@@ -20,14 +20,13 @@ import java.util.UUID
 
 import com.dataartisans.flink.example.eventpattern.kafka.EventDeSerializer
 import grizzled.slf4j.Logger
-import org.apache.flink.api.common.restartstrategy.RestartStrategies
 import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.runtime.state.{FunctionInitializationContext, FunctionSnapshotContext}
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction
 import org.apache.flink.streaming.api.functions.source.SourceFunction.SourceContext
 import org.apache.flink.streaming.api.scala._
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer09
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer011
 import org.apache.flink.util.XORShiftRandom
 
 
@@ -55,7 +54,7 @@ object DataGeneratorJob {
     val stream = env.addSource(new KeyedEventsGeneratorSource(pt.getInt("numKeys", 200)))
 
     stream.addSink(
-      new FlinkKafkaProducer09[Event](
+      new FlinkKafkaProducer011[Event](
         pt.getRequired("topic"), new EventDeSerializer(), pt.getProperties))
 
     // trigger program execution

@@ -27,7 +27,7 @@ import org.apache.flink.runtime.state.filesystem.FsStateBackend
 import org.apache.flink.streaming.api.environment.CheckpointConfig.ExternalizedCheckpointCleanup
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.streaming.connectors.fs.bucketing.BucketingSink
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer09
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer011
 import org.apache.flink.util.Collector
 
 /**
@@ -80,7 +80,7 @@ object StateMachineJob {
     }
 
     val stream = env.addSource(
-      new FlinkKafkaConsumer09[Event](
+      new FlinkKafkaConsumer011[Event](
         pt.getRequired("input-topic"), new EventDeSerializer(), pt.getProperties))
 
     val alerts = stream
